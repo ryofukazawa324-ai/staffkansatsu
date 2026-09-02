@@ -18,6 +18,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           p=Path('index.html')
           s=p.read_text()
 
@@ -25,16 +26,9 @@ jobs:
           if '.grade-tabs{' not in s:
               s=s.replace(old,old+"    .grade-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:6px}\n    .grade-tab{border:1px solid #d9dee8;background:#f7f9fc;color:#536079;border-radius:11px;padding:10px 6px;font-weight:800;font-size:12px}\n    .grade-tab.active{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(49,86,211,.18)}\n",1)
 
-          s=s.replace('''      <div class="field">
-                <label for="obsGrade">今のグレード</label>
-                <input id="obsGrade" type="text" placeholder="例：G2 / C2 / 新人 など">
-              </div>''','''      <div class="field">
-                <label>今のグレード</label>
-                <input id="obsGrade" type="hidden">
-                <div id="obsGradeTabs" class="grade-tabs" aria-label="今のグレード"></div>
-              </div>''')
-          s=s.replace('''        <div class="field"><label for="manualGrade">現在グレード</label><input id="manualGrade" type="text" placeholder="例：G2"></div>''','''        <div class="field"><label>現在グレード</label><input id="manualGrade" type="hidden"><div id="manualGradeTabs" class="grade-tabs" aria-label="現在グレード"></div></div>''')
-          s=s.replace('''    <div class="field"><label for="gradeDialogInput">現在グレード</label><input id="gradeDialogInput" type="text"></div>''','''    <div class="field"><label>現在グレード</label><input id="gradeDialogInput" type="hidden"><div id="gradeDialogTabs" class="grade-tabs" aria-label="現在グレード"></div></div>''')
+          s=re.sub(r'<label for="obsGrade">今のグレード</label>\s*<input id="obsGrade" type="text"[^>]*>', '<label>今のグレード</label>\n        <input id="obsGrade" type="hidden">\n        <div id="obsGradeTabs" class="grade-tabs" aria-label="今のグレード"></div>', s, count=1)
+          s=re.sub(r'<label for="manualGrade">現在グレード</label><input id="manualGrade" type="text"[^>]*>', '<label>現在グレード</label><input id="manualGrade" type="hidden"><div id="manualGradeTabs" class="grade-tabs" aria-label="現在グレード"></div>', s, count=1)
+          s=re.sub(r'<label for="gradeDialogInput">現在グレード</label><input id="gradeDialogInput" type="text"[^>]*>', '<label>現在グレード</label><input id="gradeDialogInput" type="hidden"><div id="gradeDialogTabs" class="grade-tabs" aria-label="現在グレード"></div>', s, count=1)
 
           anchor="  let editingGradeId=null;\n"
           if 'const GRADE_OPTIONS=' not in s:
@@ -46,8 +40,10 @@ jobs:
           s=s.replace("  $('obsDate').value=nowISO();\n  $('obsStaff').onchange=syncGradeFromStaff;","  $('obsDate').value=nowISO();\n  renderGradeTabs('manualGradeTabs','manualGrade','');\n  $('obsStaff').onchange=syncGradeFromStaff;")
 
           p.write_text(s)
-          if 'obsGradeTabs' not in s or 'GRADE_OPTIONS' not in s:
-              raise SystemExit('grade tab patch failed')
+          needed=['obsGradeTabs','manualGradeTabs','gradeDialogTabs','GRADE_OPTIONS','renderGradeTabs']
+          missing=[x for x in needed if x not in s]
+          if missing:
+              raise SystemExit('grade tab patch failed: '+','.join(missing))
           PY
       - name: Commit app update
         run: |
