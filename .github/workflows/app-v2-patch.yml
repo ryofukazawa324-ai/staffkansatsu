@@ -14,6 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Make regex replacements literal-safe
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/patch_app_v2.py')
+          s=p.read_text()
+          s=s.replace('import re\n', "import re\n\ndef sub(pattern,repl,string,count=0,flags=0):\n    return re.sub(pattern, lambda m: repl, string, count=count, flags=flags)\n", 1)
+          s=s.replace('s=re.sub(', 's=sub(')
+          p.write_text(s)
+          PY
       - name: Patch app
         run: python scripts/patch_app_v2.py
       - name: Commit changes
