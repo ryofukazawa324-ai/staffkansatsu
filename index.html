@@ -88,6 +88,9 @@
     .privacy{font-size:11px;color:#667085;line-height:1.55}
     .pillrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
     .pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 9px;font-size:11px}
+    .grade-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:6px}
+    .grade-tab{border:1px solid #d9dee8;background:#f7f9fc;color:#536079;border-radius:11px;padding:10px 6px;font-weight:800;font-size:12px}
+    .grade-tab.active{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(49,86,211,.18)}
     .footer-note{text-align:center;font-size:11px;color:#8991a0;padding:20px 4px}
     dialog{border:0;border-radius:18px;padding:0;width:min(520px,calc(100% - 24px));box-shadow:0 25px 80px rgba(20,25,45,.3)}
     dialog::backdrop{background:rgba(21,27,43,.45)}
@@ -130,7 +133,9 @@
         <div class="field"><label for="obsDate">日付</label><input id="obsDate" type="date"></div>
         <div class="field"><label for="obsStaff">スタッフ</label><select id="obsStaff"></select></div>
       </div>
-      <div class="field"><label for="obsGrade">今のグレード</label><input id="obsGrade" type="text" placeholder="例：G2 / C2 / 新人 など"></div>
+      <div class="field"><label>今のグレード</label>
+        <input id="obsGrade" type="hidden">
+        <div id="obsGradeTabs" class="grade-tabs" aria-label="今のグレード"></div></div>
       <div class="field"><label for="obsGood">良い点</label><textarea id="obsGood" placeholder="例：レジ混雑に気づいて自発的に応援へ入った"></textarea></div>
       <div class="field"><label for="obsImprove">改善期待行動</label><textarea id="obsImprove" placeholder="例：自分で完結せず、周囲にも優先順位を共有して動けるとさらに良い"></textarea></div>
       <div class="field"><label for="obsFact">具体的な出来事・状況</label><textarea id="obsFact" placeholder="いつ・どんな状況で・どんな行動だったか"></textarea></div>
@@ -154,7 +159,7 @@
       <h3>手動でスタッフを追加</h3>
       <div class="grid2">
         <div class="field"><label for="manualName">名前</label><input id="manualName" type="text" placeholder="スタッフ名"></div>
-        <div class="field"><label for="manualGrade">現在グレード</label><input id="manualGrade" type="text" placeholder="例：G2"></div>
+        <div class="field"><label>現在グレード</label><input id="manualGrade" type="hidden"><div id="manualGradeTabs" class="grade-tabs" aria-label="現在グレード"></div></div>
       </div>
       <button id="addStaffBtn" class="btn secondary" style="margin-top:12px">追加</button>
     </div>
@@ -211,7 +216,7 @@
 <dialog id="gradeDialog">
   <div class="dialog-body">
     <h3 id="gradeDialogTitle" style="margin:0">スタッフ設定</h3>
-    <div class="field"><label for="gradeDialogInput">現在グレード</label><input id="gradeDialogInput" type="text"></div>
+    <div class="field"><label>現在グレード</label><input id="gradeDialogInput" type="hidden"><div id="gradeDialogTabs" class="grade-tabs" aria-label="現在グレード"></div></div>
     <div class="btnrow"><button id="gradeDialogSave" class="btn primary">保存</button><button id="gradeDialogClose" class="btn secondary">閉じる</button></div>
   </div>
 </dialog>
@@ -225,7 +230,7 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const loadJSON=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};
   const saveJSON=(key,val)=>localStorage.setItem(key,JSON.stringify(val));
-  let staff=loadJSON(KEYS.staff,[]),records=loadJSON(KEYS.records,[]),importSettings=loadJSON(KEYS.import,{start:'',end:'',exclude:''}),lastImportedNames=[],editingGradeId=null;
+  let staff=loadJSON(KEYS.staff,[]),records=loadJSON(KEYS.records,[]),importSettings=loadJSON(KEYS.import,{start:'',end:'',exclude:''}),lastImportedNames=[],editingGradeId=null;const GRADE_OPTIONS=['新人','社員','中堅','熟練'];function renderGradeTabs(containerId,inputId,value){const host=$(containerId),input=$(inputId);if(!host||!input)return;input.value=value||'';host.innerHTML=GRADE_OPTIONS.map(g=>`<button type="button" class="grade-tab ${input.value===g?'active':''}" data-grade-choice="${esc(g)}">${esc(g)}</button>`).join('');host.querySelectorAll('[data-grade-choice]').forEach(b=>b.onclick=()=>{input.value=b.dataset.gradeChoice;host.querySelectorAll('.grade-tab').forEach(x=>x.classList.toggle('active',x===b))})}
 
   function cryptoId(){if(globalThis.crypto?.randomUUID)return crypto.randomUUID();return 'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)}
   function normalizeStaff(){const seen=new Set();staff=staff.filter(s=>{s.id=String(s.id||cryptoId());s.name=String(s.name||'').trim();s.grade=String(s.grade||'').trim();s.active=s.active!==false;if(!s.name||seen.has(s.name))return false;seen.add(s.name);return true});saveJSON(KEYS.staff,staff)}
@@ -249,7 +254,7 @@
   function persist(){saveJSON(KEYS.staff,staff);saveJSON(KEYS.records,records)}
   function renderStats(){const p=currentPeriod(),rs=getPeriodRecords(p.key);$('heroPeriod').textContent=p.label;$('statStaff').textContent=activeStaff().length;$('statRecords').textContent=rs.length;$('statDays').textContent=new Set(rs.map(r=>r.date)).size}
   function renderStaffSelect(){const current=$('obsStaff').value,arr=activeStaff().sort((a,b)=>a.name.localeCompare(b.name,'ja'));$('obsStaff').innerHTML=arr.length?arr.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.grade?`（${esc(s.grade)}）`:''}</option>`).join(''):'<option value="">観察対象スタッフを登録してください</option>';if(arr.some(s=>s.id===current))$('obsStaff').value=current;syncGradeFromStaff()}
-  function syncGradeFromStaff(){const s=findStaff($('obsStaff').value);if(s)$('obsGrade').value=s.grade||''}
+  function syncGradeFromStaff(){const s=findStaff($('obsStaff').value);renderGradeTabs('obsGradeTabs','obsGrade',s?.grade||'')}
 
   function renderStaff(){const q=$('staffSearch').value.trim().toLowerCase(),arr=[...staff].sort((a,b)=>a.name.localeCompare(b.name,'ja')).filter(s=>!q||s.name.toLowerCase().includes(q));if(!arr.length){$('staffList').innerHTML='<div class="empty">スタッフがまだ登録されていません。</div>';return}$('staffList').innerHTML=arr.map(s=>{const count=records.filter(r=>r.staffId===s.id).length;return`<div class="staff-row"><div class="avatar">${esc(initials(s.name))}</div><div class="staff-main"><strong>${esc(s.name)}</strong><small>${s.grade?`グレード ${esc(s.grade)} ・ `:''}${count}件の記録</small><div class="pillrow"><button class="pill" data-grade="${esc(s.id)}">グレード変更</button><button class="pill" data-delete-staff="${esc(s.id)}">削除</button></div></div><label class="switch" title="観察対象"><input type="checkbox" data-active="${esc(s.id)}" ${s.active?'checked':''}><span class="slider"></span></label></div>`}).join('');$('staffList').querySelectorAll('[data-active]').forEach(el=>el.onchange=()=>{const s=findStaff(el.dataset.active);if(s){s.active=el.checked;persist();renderAll()}});$('staffList').querySelectorAll('[data-grade]').forEach(el=>el.onclick=()=>openGradeDialog(el.dataset.grade));$('staffList').querySelectorAll('[data-delete-staff]').forEach(el=>el.onclick=()=>deleteStaff(el.dataset.deleteStaff))}
 
@@ -266,9 +271,9 @@
   function summaryText(ai=false){const key=$('periodSelect').value,p=periodOptions().find(x=>x.key===key),rs=getPeriodRecords(key),ids=[...new Set(rs.map(r=>r.staffId))],blocks=ids.map(id=>{const prs=rs.filter(r=>r.staffId===id).sort((a,b)=>a.date.localeCompare(b.date)),s=findStaff(id),name=s?.name||prs[0]?.staffName||'不明',lines=[`【${name}】`];prs.forEach(r=>{lines.push(`\n${r.date}${r.grade?` / グレード:${r.grade}`:''}`);if(r.good)lines.push(`良い点：${r.good}`);if(r.improve)lines.push(`改善期待行動：${r.improve}`);if(r.fact)lines.push(`出来事・状況：${r.fact}`);if(r.next)lines.push(`次回確認：${r.next}`)});return lines.join('\n')});const base=`${p?.label||key} スタッフ観察記録\n記録件数：${rs.length}件\n\n${blocks.join('\n\n--------------------\n\n')}`;if(!ai)return base;return`以下は${p?.label||key}のスタッフ観察記録です。人物への決めつけではなく、記載された具体的行動だけを根拠に、スタッフごとに半年の育成振り返りを作成してください。\n\n各スタッフについて、\n・繰り返し見られた良い行動・強み\n・改善期待行動の傾向\n・前半から後半への変化や成長\n・次の半年で期待する具体的行動を3つ\n・リーダーとしてどう支援・声掛けするとよいか\nを簡潔に整理してください。根拠が少ない項目は推測せず「記録不足」としてください。\n\n${base}`}
   async function copyText(text,msg){if(!text.trim()){alert('コピーするデータがありません。');return}try{await navigator.clipboard.writeText(text);alert(msg)}catch{prompt('コピーしてください',text)}}
 
-  function openGradeDialog(id){editingGradeId=id;const s=findStaff(id);if(!s)return;$('gradeDialogTitle').textContent=s.name+' の設定';$('gradeDialogInput').value=s.grade||'';$('gradeDialog').showModal()}
+  function openGradeDialog(id){editingGradeId=id;const s=findStaff(id);if(!s)return;$('gradeDialogTitle').textContent=s.name+' の設定';renderGradeTabs('gradeDialogTabs','gradeDialogInput',s.grade||'');$('gradeDialog').showModal()}
   function deleteStaff(id){const s=findStaff(id);if(!s)return;const n=records.filter(r=>r.staffId===id).length;if(!confirm(`${s.name}をスタッフ一覧から削除しますか？${n?`\nこの人の観察記録 ${n}件も削除されます。`:''}`))return;staff=staff.filter(x=>x.id!==id);records=records.filter(r=>r.staffId!==id);persist();renderAll()}
-  function addStaff(){const name=$('manualName').value.trim(),grade=$('manualGrade').value.trim();if(!name){alert('名前を入力してください。');return}const hit=staff.find(s=>s.name===name);if(hit){hit.active=true;if(grade)hit.grade=grade}else staff.push({id:cryptoId(),name,grade,active:true,source:'manual'});persist();$('manualName').value='';$('manualGrade').value='';renderAll()}
+  function addStaff(){const name=$('manualName').value.trim(),grade=$('manualGrade').value.trim();if(!name){alert('名前を入力してください。');return}const hit=staff.find(s=>s.name===name);if(hit){hit.active=true;if(grade)hit.grade=grade}else staff.push({id:cryptoId(),name,grade,active:true,source:'manual'});persist();$('manualName').value='';renderGradeTabs('manualGradeTabs','manualGrade','');renderAll()}
 
   function saveImportSettings(){importSettings={start:$('rangeStart').value.trim(),end:$('rangeEnd').value.trim(),exclude:$('excludeNames').value.trim()};saveJSON(KEYS.import,importSettings);const excludes=parseExcluded();staff.forEach(s=>{if(excludes.has(s.name))s.active=false});persist();renderAll();if(lastImportedNames.length)addOrUpdateImported(lastImportedNames);$('shiftStatus').className='notice good';$('shiftStatus').textContent='抽出範囲・除外設定を保存しました。次回のExcel読込にも使われます。'}
 
@@ -282,7 +287,7 @@
   function renderAll(){normalizeStaff();renderStats();renderStaffSelect();renderStaff();renderRecent();renderPeriods()}
 
   document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===b.dataset.tab));if(b.dataset.tab==='summaryPanel')renderPeriods()});
-  $('obsDate').value=nowISO();$('obsStaff').onchange=syncGradeFromStaff;$('saveRecordBtn').onclick=saveRecord;$('clearFormBtn').onclick=()=>clearRecordForm();$('staffSearch').oninput=renderStaff;$('addStaffBtn').onclick=addStaff;$('periodSelect').onchange=renderSummary;$('copySummaryBtn').onclick=()=>copyText(summaryText(false),'半年まとめ用データをコピーしました。');$('copyAiPromptBtn').onclick=()=>copyText(summaryText(true),'ChatGPT分析用の文章をコピーしました。');$('shiftFile').onchange=e=>{const f=e.target.files?.[0];if(f)importShift(f);e.target.value=''};$('applyImportSettingsBtn').onclick=saveImportSettings;$('backupBtn').onclick=backup;$('restoreFile').onchange=e=>{const f=e.target.files?.[0];if(f)restore(f);e.target.value=''};$('csvBtn').onclick=exportCSV;$('deleteAllBtn').onclick=deleteAll;$('gradeDialogClose').onclick=()=>$('gradeDialog').close();$('gradeDialogSave').onclick=()=>{const s=findStaff(editingGradeId);if(s){s.grade=$('gradeDialogInput').value.trim();persist();renderAll()}$('gradeDialog').close()};
+  $('obsDate').value=nowISO();renderGradeTabs('manualGradeTabs','manualGrade','');$('obsStaff').onchange=syncGradeFromStaff;$('saveRecordBtn').onclick=saveRecord;$('clearFormBtn').onclick=()=>clearRecordForm();$('staffSearch').oninput=renderStaff;$('addStaffBtn').onclick=addStaff;$('periodSelect').onchange=renderSummary;$('copySummaryBtn').onclick=()=>copyText(summaryText(false),'半年まとめ用データをコピーしました。');$('copyAiPromptBtn').onclick=()=>copyText(summaryText(true),'ChatGPT分析用の文章をコピーしました。');$('shiftFile').onchange=e=>{const f=e.target.files?.[0];if(f)importShift(f);e.target.value=''};$('applyImportSettingsBtn').onclick=saveImportSettings;$('backupBtn').onclick=backup;$('restoreFile').onchange=e=>{const f=e.target.files?.[0];if(f)restore(f);e.target.value=''};$('csvBtn').onclick=exportCSV;$('deleteAllBtn').onclick=deleteAll;$('gradeDialogClose').onclick=()=>$('gradeDialog').close();$('gradeDialogSave').onclick=()=>{const s=findStaff(editingGradeId);if(s){s.grade=$('gradeDialogInput').value.trim();persist();renderAll()}$('gradeDialog').close()};
   loadImportFields();normalizeStaff();renderAll();
 })();
 </script>
