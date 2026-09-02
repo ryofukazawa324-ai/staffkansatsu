@@ -30,14 +30,14 @@ jobs:
           s=re.sub(r'<label for="manualGrade">現在グレード</label><input id="manualGrade" type="text"[^>]*>', '<label>現在グレード</label><input id="manualGrade" type="hidden"><div id="manualGradeTabs" class="grade-tabs" aria-label="現在グレード"></div>', s, count=1)
           s=re.sub(r'<label for="gradeDialogInput">現在グレード</label><input id="gradeDialogInput" type="text"[^>]*>', '<label>現在グレード</label><input id="gradeDialogInput" type="hidden"><div id="gradeDialogTabs" class="grade-tabs" aria-label="現在グレード"></div>', s, count=1)
 
-          anchor="  let editingGradeId=null;\n"
-          if 'const GRADE_OPTIONS=' not in s:
-              s=s.replace(anchor,anchor+"  const GRADE_OPTIONS=['新人','社員','中堅','熟練'];\n\n  function renderGradeTabs(containerId,inputId,value){\n    const host=$(containerId),input=$(inputId);\n    if(!host||!input)return;\n    input.value=value||'';\n    host.innerHTML=GRADE_OPTIONS.map(g=>`<button type=\"button\" class=\"grade-tab ${input.value===g?'active':''}\" data-grade-choice=\"${esc(g)}\">${esc(g)}</button>`).join('');\n    host.querySelectorAll('[data-grade-choice]').forEach(b=>b.onclick=()=>{\n      input.value=b.dataset.gradeChoice;\n      host.querySelectorAll('.grade-tab').forEach(x=>x.classList.toggle('active',x===b));\n    });\n  }\n",1)
+          if 'GRADE_OPTIONS' not in s:
+              grade_js="const GRADE_OPTIONS=['新人','社員','中堅','熟練'];function renderGradeTabs(containerId,inputId,value){const host=$(containerId),input=$(inputId);if(!host||!input)return;input.value=value||'';host.innerHTML=GRADE_OPTIONS.map(g=>`<button type=\"button\" class=\"grade-tab ${input.value===g?'active':''}\" data-grade-choice=\"${esc(g)}\">${esc(g)}</button>`).join('');host.querySelectorAll('[data-grade-choice]').forEach(b=>b.onclick=()=>{input.value=b.dataset.gradeChoice;host.querySelectorAll('.grade-tab').forEach(x=>x.classList.toggle('active',x===b))})}"
+              s=s.replace('editingGradeId=null;','editingGradeId=null;'+grade_js,1)
 
-          s=s.replace("  function syncGradeFromStaff(){\n    const s=findStaff($('obsStaff').value);\n    if(s)$('obsGrade').value=s.grade||'';\n  }","  function syncGradeFromStaff(){\n    const s=findStaff($('obsStaff').value);\n    renderGradeTabs('obsGradeTabs','obsGrade',s?.grade||'');\n  }")
-          s=s.replace("    $('gradeDialogTitle').textContent=s.name+' の設定';\n    $('gradeDialogInput').value=s.grade||'';\n    $('gradeDialog').showModal();","    $('gradeDialogTitle').textContent=s.name+' の設定';\n    renderGradeTabs('gradeDialogTabs','gradeDialogInput',s.grade||'');\n    $('gradeDialog').showModal();")
-          s=s.replace("    persist();$('manualName').value='';$('manualGrade').value='';renderAll();","    persist();$('manualName').value='';renderGradeTabs('manualGradeTabs','manualGrade','');renderAll();")
-          s=s.replace("  $('obsDate').value=nowISO();\n  $('obsStaff').onchange=syncGradeFromStaff;","  $('obsDate').value=nowISO();\n  renderGradeTabs('manualGradeTabs','manualGrade','');\n  $('obsStaff').onchange=syncGradeFromStaff;")
+          s=s.replace("function syncGradeFromStaff(){const s=findStaff($('obsStaff').value);if(s)$('obsGrade').value=s.grade||''}","function syncGradeFromStaff(){const s=findStaff($('obsStaff').value);renderGradeTabs('obsGradeTabs','obsGrade',s?.grade||'')}")
+          s=s.replace("$('gradeDialogTitle').textContent=s.name+' の設定';$('gradeDialogInput').value=s.grade||'';$('gradeDialog').showModal()","$('gradeDialogTitle').textContent=s.name+' の設定';renderGradeTabs('gradeDialogTabs','gradeDialogInput',s.grade||'');$('gradeDialog').showModal()")
+          s=s.replace("persist();$('manualName').value='';$('manualGrade').value='';renderAll()","persist();$('manualName').value='';renderGradeTabs('manualGradeTabs','manualGrade','');renderAll()")
+          s=s.replace("$('obsDate').value=nowISO();$('obsStaff').onchange=syncGradeFromStaff;","$('obsDate').value=nowISO();renderGradeTabs('manualGradeTabs','manualGrade','');$('obsStaff').onchange=syncGradeFromStaff;")
 
           p.write_text(s)
           needed=['obsGradeTabs','manualGradeTabs','gradeDialogTabs','GRADE_OPTIONS','renderGradeTabs']
