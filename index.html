@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>スタッフ観察ノート</title>
+  <link rel="preconnect" href="https://cdn.sheetjs.com" crossorigin>
+  <style>
+    *{box-sizing:border-box}
+    :root{
+      --bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#667085;--line:#e5e9f0;
+      --primary:#3156d3;--primary-soft:#eef2ff;--good:#0f8a5f;--good-soft:#e9f8f1;
+      --warn:#b66a08;--warn-soft:#fff5e5;--danger:#bb2d3b;--danger-soft:#fff0f2;
+      --shadow:0 10px 28px rgba(28,39,67,.07)
+    }
+    html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}
+    body{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer}
+    .app{width:min(980px,calc(100% - 24px));margin:18px auto 0}
+    .hero{background:linear-gradient(135deg,#1d2f70,#3156d3);color:white;border-radius:24px;padding:22px;box-shadow:var(--shadow)}
+    .hero h1{font-size:25px;margin:0 0 7px}
+    .hero p{margin:0;color:rgba(255,255,255,.82);font-size:13px;line-height:1.6}
+    .period-chip{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:7px 11px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:999px;font-size:12px;font-weight:700}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:13px}
+    .stat{background:rgba(255,255,255,.10);border-radius:15px;padding:11px}
+    .stat strong{display:block;font-size:21px}
+    .stat span{font-size:11px;color:rgba(255,255,255,.75)}
+    .tabs{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:14px 0;padding:7px;background:rgba(245,247,251,.94);backdrop-filter:blur(12px)}
+    .tab{border:0;background:#e9edf5;color:#516079;border-radius:12px;padding:11px 4px;font-weight:800;font-size:12px}
+    .tab.active{background:var(--ink);color:#fff}
+    .panel{display:none}
+    .panel.active{display:block}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:19px;padding:17px;margin:11px 0;box-shadow:0 4px 15px rgba(28,39,67,.035)}
+    .card h2,.card h3{margin:0 0 6px}
+    .card h2{font-size:19px}.card h3{font-size:15px}
+    .muted{color:var(--muted);font-size:12px;line-height:1.55}
+    .field{margin-top:13px}
+    .field label{display:block;font-size:12px;font-weight:800;margin:0 0 6px;color:#44506a}
+    input[type=text],input[type=date],input[type=file],textarea,select{
+      width:100%;border:1px solid #d9dee8;background:#fff;border-radius:12px;padding:11px 12px;color:var(--ink);outline:none
+    }
+    textarea{min-height:92px;resize:vertical;line-height:1.6}
+    input:focus,textarea:focus,select:focus{border-color:#8ea4ef;box-shadow:0 0 0 3px rgba(49,86,211,.10)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+    .btn{border:0;border-radius:11px;padding:10px 13px;font-weight:800;background:var(--ink);color:white}
+    .btn.primary{background:var(--primary)}
+    .btn.secondary{background:#eef1f6;color:#33405a}
+    .btn.good{background:var(--good)}
+    .btn.danger{background:var(--danger-soft);color:var(--danger);border:1px solid #ffd3d8}
+    .btn.block{width:100%}
+    .file-label{display:flex;justify-content:center;align-items:center;border:1px dashed #afbad1;background:#f8faff;color:#31425f;border-radius:13px;padding:13px;font-weight:800;cursor:pointer}
+    input[type=file]{display:none}
+    .notice{border-radius:13px;padding:11px 12px;font-size:12px;line-height:1.55;margin-top:11px;background:#f6f8fb;color:#56627a}
+    .notice.good{background:var(--good-soft);color:#126c4e}
+    .notice.warn{background:var(--warn-soft);color:#8c560f}
+    .staff-list{display:grid;gap:8px;margin-top:12px}
+    .staff-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:11px;background:#fff}
+    .avatar{width:38px;height:38px;border-radius:12px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:900}
+    .staff-main strong{display:block}.staff-main small{color:var(--muted)}
+    .switch{position:relative;width:45px;height:26px;display:inline-block}
+    .switch input{opacity:0;width:0;height:0}
+    .slider{position:absolute;inset:0;background:#cfd5df;border-radius:999px;transition:.2s}
+    .slider:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:white;border-radius:50%;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+    .switch input:checked + .slider{background:var(--primary)}
+    .switch input:checked + .slider:before{transform:translateX(19px)}
+    .record-list{display:grid;gap:9px;margin-top:12px}
+    .record{border:1px solid var(--line);border-radius:15px;padding:13px;background:#fff}
+    .record-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+    .badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800;background:var(--primary-soft);color:var(--primary)}
+    .badge.good{background:var(--good-soft);color:var(--good)}
+    .record h4{margin:5px 0 0;font-size:15px}
+    .record-date{font-size:11px;color:var(--muted)}
+    .record-section{margin-top:10px;padding-top:10px;border-top:1px solid #eef0f4}
+    .record-section b{font-size:11px;color:#667085}
+    .record-section div{white-space:pre-wrap;font-size:13px;line-height:1.55;margin-top:3px}
+    .iconbtn{border:0;background:#f4f6f9;color:#5a6579;border-radius:9px;padding:6px 8px;font-size:11px}
+    .empty{text-align:center;padding:28px 12px;color:#7b8598;font-size:13px}
+    .summary-person{border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:10px}
+    .summary-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .summary-box{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:11px}
+    .summary-item{border-radius:12px;padding:11px;background:#f7f9fc}
+    .summary-item strong{font-size:11px;color:#5d6980;display:block;margin-bottom:5px}
+    .summary-item div{font-size:13px;white-space:pre-wrap;line-height:1.55}
+    .search{margin-top:10px}
+    .privacy{font-size:11px;color:#667085;line-height:1.55}
+    .pillrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 9px;font-size:11px}
+    .footer-note{text-align:center;font-size:11px;color:#8991a0;padding:20px 4px}
+    dialog{border:0;border-radius:18px;padding:0;width:min(520px,calc(100% - 24px));box-shadow:0 25px 80px rgba(20,25,45,.3)}
+    dialog::backdrop{background:rgba(21,27,43,.45)}
+    .dialog-body{padding:18px}
+    @media(max-width:650px){
+      .app{width:min(100% - 16px,980px);margin-top:8px}
+      .hero{border-radius:18px;padding:18px}
+      .stats{gap:6px}.stat{padding:9px}.stat strong{font-size:18px}
+      .grid2,.summary-box{grid-template-columns:1fr}
+      .card{border-radius:16px;padding:14px}
+      .tabs{margin-left:-4px;margin-right:-4px}
+    }
+  </style>
+</head>
+<body>
+<main class="app">
+  <section class="hero">
+    <h1>スタッフ観察ノート</h1>
+    <p>日々の良い行動と改善期待行動を、半年単位で蓄積・振り返り。</p>
+    <div class="period-chip" id="heroPeriod">—</div>
+    <div class="stats">
+      <div class="stat"><strong id="statStaff">0</strong><span>観察対象</span></div>
+      <div class="stat"><strong id="statRecords">0</strong><span>今期記録</span></div>
+      <div class="stat"><strong id="statDays">0</strong><span>記録日数</span></div>
+    </div>
+  </section>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="recordPanel">記録する</button>
+    <button class="tab" data-tab="staffPanel">スタッフ</button>
+    <button class="tab" data-tab="summaryPanel">半年まとめ</button>
+    <button class="tab" data-tab="dataPanel">データ</button>
+  </nav>
+
+  <section id="recordPanel" class="panel active">
+    <div class="card">
+      <h2>観察記録を追加</h2>
+      <div class="muted">事実ベースで短く残し、あとから半年単位で振り返れます。</div>
+      <div class="grid2">
+        <div class="field"><label for="obsDate">日付</label><input id="obsDate" type="date"></div>
+        <div class="field"><label for="obsStaff">スタッフ</label><select id="obsStaff"></select></div>
+      </div>
+      <div class="field"><label for="obsGrade">今のグレード</label><input id="obsGrade" type="text" placeholder="例：G2 / C2 / 新人 など"></div>
+      <div class="field"><label for="obsGood">良い点</label><textarea id="obsGood" placeholder="例：レジ混雑に気づいて自発的に応援へ入った"></textarea></div>
+      <div class="field"><label for="obsImprove">改善期待行動</label><textarea id="obsImprove" placeholder="例：自分で完結せず、周囲にも優先順位を共有して動けるとさらに良い"></textarea></div>
+      <div class="field"><label for="obsFact">具体的な出来事・状況</label><textarea id="obsFact" placeholder="いつ・どんな状況で・どんな行動だったか"></textarea></div>
+      <div class="field"><label for="obsNext">次回確認したいこと</label><textarea id="obsNext" placeholder="次に同じ状況があった時に確認するポイント"></textarea></div>
+      <div class="btnrow">
+        <button id="saveRecordBtn" class="btn primary">観察記録を保存</button>
+        <button id="clearFormBtn" class="btn secondary">入力をクリア</button>
+      </div>
+    </div>
+    <div class="card"><h3>最近の観察記録</h3><div id="recentRecords" class="record-list"></div></div>
+  </section>
+
+  <section id="staffPanel" class="panel">
+    <div class="card">
+      <h2>スタッフ管理</h2>
+      <div class="muted">シフト表から読み込んだ名前のうち、観察対象にする人だけONにできます。</div>
+      <input id="staffSearch" class="search" type="text" placeholder="名前で検索">
+      <div id="staffList" class="staff-list"></div>
+    </div>
+    <div class="card">
+      <h3>手動でスタッフを追加</h3>
+      <div class="grid2">
+        <div class="field"><label for="manualName">名前</label><input id="manualName" type="text" placeholder="スタッフ名"></div>
+        <div class="field"><label for="manualGrade">現在グレード</label><input id="manualGrade" type="text" placeholder="例：G2"></div>
+      </div>
+      <button id="addStaffBtn" class="btn secondary" style="margin-top:12px">追加</button>
+    </div>
+  </section>
+
+  <section id="summaryPanel" class="panel">
+    <div class="card">
+      <h2>半年まとめ</h2>
+      <div class="muted">4〜9月を上期、10〜3月を下期として自動で区切ります。</div>
+      <div class="field"><label for="periodSelect">表示期間</label><select id="periodSelect"></select></div>
+      <div class="btnrow">
+        <button id="copySummaryBtn" class="btn primary">半年まとめ用データをコピー</button>
+        <button id="copyAiPromptBtn" class="btn secondary">ChatGPT分析用にコピー</button>
+      </div>
+      <div id="summaryList"></div>
+    </div>
+  </section>
+
+  <section id="dataPanel" class="panel">
+    <div class="card">
+      <h2>シフト表からスタッフ読込</h2>
+      <div class="muted">前のシフト読取と同じ形式に対応。「3）入力用」シートの「担当者名」列を探します。</div>
+      <label class="file-label" for="shiftFile">Excelシフト表を選択</label>
+      <input id="shiftFile" type="file" accept=".xlsx,.xls,.xlsm">
+      <div id="shiftStatus" class="notice">まだ読み込んでいません。</div>
+      <div class="grid2">
+        <div class="field"><label for="rangeStart">抽出開始の名前（任意）</label><input id="rangeStart" type="text" placeholder="例：幸田"></div>
+        <div class="field"><label for="rangeEnd">抽出終了の名前（任意）</label><input id="rangeEnd" type="text" placeholder="例：小西"></div>
+      </div>
+      <div class="field"><label for="excludeNames">除外する名前</label><textarea id="excludeNames" placeholder="深澤、○○、△△ のように改行またはカンマ区切り"></textarea></div>
+      <div class="btnrow"><button id="applyImportSettingsBtn" class="btn secondary">設定を保存</button></div>
+    </div>
+
+    <div class="card">
+      <h3>バックアップ</h3>
+      <div class="privacy">観察データはこのブラウザ端末内に保存され、GitHubリポジトリには保存されません。ブラウザデータ削除や端末変更に備えて定期的なバックアップがおすすめです。</div>
+      <div class="btnrow">
+        <button id="backupBtn" class="btn good">JSONバックアップ</button>
+        <label class="btn secondary" for="restoreFile">バックアップ復元</label>
+        <input id="restoreFile" type="file" accept=".json">
+        <button id="csvBtn" class="btn secondary">CSV出力</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>危険な操作</h3>
+      <div class="muted">端末内に保存したスタッフ・観察記録をすべて削除します。</div>
+      <button id="deleteAllBtn" class="btn danger block" style="margin-top:12px">全データを削除</button>
+    </div>
+  </section>
+  <div class="footer-note">観察は人物評価ではなく、具体的な行動事実と育成の次アクションを中心に。</div>
+</main>
+
+<dialog id="gradeDialog">
+  <div class="dialog-body">
+    <h3 id="gradeDialogTitle" style="margin:0">スタッフ設定</h3>
+    <div class="field"><label for="gradeDialogInput">現在グレード</label><input id="gradeDialogInput" type="text"></div>
+    <div class="btnrow"><button id="gradeDialogSave" class="btn primary">保存</button><button id="gradeDialogClose" class="btn secondary">閉じる</button></div>
+  </div>
+</dialog>
+
+<script>
+(()=>{
+  const PREFIX='staffObs:v1:';
+  const KEYS={staff:PREFIX+'staff',records:PREFIX+'records',import:PREFIX+'importSettings'};
+  const $=id=>document.getElementById(id);
+  const nowISO=()=>{const d=new Date(),z=new Date(d.getTime()-d.getTimezoneOffset()*60000);return z.toISOString().slice(0,10)};
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const loadJSON=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};
+  const saveJSON=(key,val)=>localStorage.setItem(key,JSON.stringify(val));
+  let staff=loadJSON(KEYS.staff,[]),records=loadJSON(KEYS.records,[]),importSettings=loadJSON(KEYS.import,{start:'',end:'',exclude:''}),lastImportedNames=[],editingGradeId=null;
+
+  function cryptoId(){if(globalThis.crypto?.randomUUID)return crypto.randomUUID();return 'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)}
+  function normalizeStaff(){const seen=new Set();staff=staff.filter(s=>{s.id=String(s.id||cryptoId());s.name=String(s.name||'').trim();s.grade=String(s.grade||'').trim();s.active=s.active!==false;if(!s.name||seen.has(s.name))return false;seen.add(s.name);return true});saveJSON(KEYS.staff,staff)}
+  function periodFor(dateStr){const d=new Date(dateStr+'T00:00:00'),y=d.getFullYear(),m=d.getMonth()+1;if(m>=4&&m<=9)return{key:`${y}-H1`,label:`${y}年度 上期（4〜9月）`,start:`${y}-04-01`,end:`${y}-09-30`};if(m>=10)return{key:`${y}-H2`,label:`${y}年度 下期（10〜3月）`,start:`${y}-10-01`,end:`${y+1}-03-31`};return{key:`${y-1}-H2`,label:`${y-1}年度 下期（10〜3月）`,start:`${y-1}-10-01`,end:`${y}-03-31`}}
+  const currentPeriod=()=>periodFor(nowISO());
+  const getPeriodRecords=key=>records.filter(r=>periodFor(r.date).key===key);
+  function periodOptions(){const map=new Map(),cp=currentPeriod();map.set(cp.key,cp);records.forEach(r=>{const p=periodFor(r.date);map.set(p.key,p)});return[...map.values()].sort((a,b)=>b.start.localeCompare(a.start))}
+  const initials=name=>[...name].slice(0,1).join('')||'人';
+  const parseExcluded=()=>new Set(String(importSettings.exclude||'').split(/[,\n、，]+/).map(x=>x.trim()).filter(Boolean));
+
+  function addOrUpdateImported(names){const excludes=parseExcluded();names.forEach(name=>{if(!name||excludes.has(name))return;const hit=staff.find(s=>s.name===name);if(!hit)staff.push({id:cryptoId(),name,grade:'',active:true,source:'shift'})});staff.forEach(s=>{if(excludes.has(s.name))s.active=false});saveJSON(KEYS.staff,staff);renderAll()}
+  const cleanName=v=>String(v??'').replace(/\u3000/g,' ').trim();
+  function looksLikePersonName(v){const s=cleanName(v);if(!s||s.length>20)return false;if(/^(担当者名|CD|社員番号|氏名|名前|合計|公休|有休|休み|勤務|所属|部門|日付|曜日)$/i.test(s))return false;if(/^\d+([./-]\d+)*$/.test(s))return false;if(/^[早遅開閉休有公欠出残]+$/.test(s))return false;return/[一-龠々ぁ-んァ-ヶA-Za-z]/.test(s)}
+  function extractNames(rows){let hr=-1,nc=-1;for(let r=0;r<Math.min(rows.length,80);r++){for(let c=0;c<(rows[r]||[]).length;c++){const v=cleanName(rows[r][c]);if(v.includes('担当者名')||v==='氏名'||v==='名前'){hr=r;nc=c;break}}if(hr>=0)break}if(hr<0)throw new Error('「担当者名」の列が見つかりませんでした。');const raw=[];for(let r=hr+1;r<rows.length;r++){const name=cleanName((rows[r]||[])[nc]);if(looksLikePersonName(name))raw.push(name)}const unique=[...new Set(raw)],start=String(importSettings.start||'').trim(),end=String(importSettings.end||'').trim();let a=0,b=unique.length-1;if(start){const i=unique.findIndex(n=>n.includes(start));if(i>=0)a=i}if(end){const i=unique.findIndex((n,idx)=>idx>=a&&n.includes(end));if(i>=0)b=i}return unique.slice(a,b+1)}
+
+  let xlsxPromise=null;
+  function ensureXLSX(){if(window.XLSX)return Promise.resolve();if(xlsxPromise)return xlsxPromise;xlsxPromise=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';s.async=true;s.onload=ok;s.onerror=()=>no(new Error('Excel読込ライブラリを読み込めませんでした'));document.head.appendChild(s)});return xlsxPromise}
+  async function importShift(file){try{$('shiftStatus').className='notice';$('shiftStatus').textContent='Excelを読み込んでいます…';await ensureXLSX();const data=await file.arrayBuffer(),wb=XLSX.read(data,{type:'array',cellDates:true}),sheetName=wb.SheetNames.includes('3）入力用')?'3）入力用':wb.SheetNames[0],rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,raw:true,defval:null});lastImportedNames=extractNames(rows);addOrUpdateImported(lastImportedNames);$('shiftStatus').className='notice good';$('shiftStatus').textContent=`${file.name} / ${sheetName} から ${lastImportedNames.length}名を候補として読み込みました。`}catch(e){$('shiftStatus').className='notice warn';$('shiftStatus').textContent='読込エラー：'+(e?.message||e)}}
+
+  const activeStaff=()=>staff.filter(s=>s.active),findStaff=id=>staff.find(s=>s.id===id);
+  function persist(){saveJSON(KEYS.staff,staff);saveJSON(KEYS.records,records)}
+  function renderStats(){const p=currentPeriod(),rs=getPeriodRecords(p.key);$('heroPeriod').textContent=p.label;$('statStaff').textContent=activeStaff().length;$('statRecords').textContent=rs.length;$('statDays').textContent=new Set(rs.map(r=>r.date)).size}
+  function renderStaffSelect(){const current=$('obsStaff').value,arr=activeStaff().sort((a,b)=>a.name.localeCompare(b.name,'ja'));$('obsStaff').innerHTML=arr.length?arr.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.grade?`（${esc(s.grade)}）`:''}</option>`).join(''):'<option value="">観察対象スタッフを登録してください</option>';if(arr.some(s=>s.id===current))$('obsStaff').value=current;syncGradeFromStaff()}
+  function syncGradeFromStaff(){const s=findStaff($('obsStaff').value);if(s)$('obsGrade').value=s.grade||''}
+
+  function renderStaff(){const q=$('staffSearch').value.trim().toLowerCase(),arr=[...staff].sort((a,b)=>a.name.localeCompare(b.name,'ja')).filter(s=>!q||s.name.toLowerCase().includes(q));if(!arr.length){$('staffList').innerHTML='<div class="empty">スタッフがまだ登録されていません。</div>';return}$('staffList').innerHTML=arr.map(s=>{const count=records.filter(r=>r.staffId===s.id).length;return`<div class="staff-row"><div class="avatar">${esc(initials(s.name))}</div><div class="staff-main"><strong>${esc(s.name)}</strong><small>${s.grade?`グレード ${esc(s.grade)} ・ `:''}${count}件の記録</small><div class="pillrow"><button class="pill" data-grade="${esc(s.id)}">グレード変更</button><button class="pill" data-delete-staff="${esc(s.id)}">削除</button></div></div><label class="switch" title="観察対象"><input type="checkbox" data-active="${esc(s.id)}" ${s.active?'checked':''}><span class="slider"></span></label></div>`}).join('');$('staffList').querySelectorAll('[data-active]').forEach(el=>el.onchange=()=>{const s=findStaff(el.dataset.active);if(s){s.active=el.checked;persist();renderAll()}});$('staffList').querySelectorAll('[data-grade]').forEach(el=>el.onclick=()=>openGradeDialog(el.dataset.grade));$('staffList').querySelectorAll('[data-delete-staff]').forEach(el=>el.onclick=()=>deleteStaff(el.dataset.deleteStaff))}
+
+  function saveRecord(){const staffId=$('obsStaff').value,date=$('obsDate').value;if(!staffId){alert('スタッフを選択してください。');return}if(!date){alert('日付を入力してください。');return}const good=$('obsGood').value.trim(),improve=$('obsImprove').value.trim(),fact=$('obsFact').value.trim(),next=$('obsNext').value.trim();if(!good&&!improve&&!fact&&!next){alert('観察内容を1項目以上入力してください。');return}const s=findStaff(staffId),grade=$('obsGrade').value.trim();if(s&&grade&&s.grade!==grade)s.grade=grade;records.push({id:cryptoId(),date,staffId,staffName:s?.name||'',grade,good,improve,fact,next,createdAt:new Date().toISOString()});persist();clearRecordForm(false);renderAll();alert('観察記録を保存しました。')}
+  function clearRecordForm(clearStaff=true){$('obsGood').value='';$('obsImprove').value='';$('obsFact').value='';$('obsNext').value='';if(clearStaff)$('obsStaff').selectedIndex=0;syncGradeFromStaff()}
+  function deleteRecord(id){if(!confirm('この観察記録を削除しますか？'))return;records=records.filter(r=>r.id!==id);persist();renderAll()}
+
+  function renderRecent(){const arr=[...records].sort((a,b)=>(b.date+b.createdAt).localeCompare(a.date+a.createdAt)).slice(0,20);if(!arr.length){$('recentRecords').innerHTML='<div class="empty">まだ観察記録がありません。</div>';return}$('recentRecords').innerHTML=arr.map(r=>{const s=findStaff(r.staffId),name=s?.name||r.staffName||'不明',sections=[['良い点',r.good],['改善期待行動',r.improve],['出来事・状況',r.fact],['次回確認',r.next]].filter(x=>x[1]);return`<article class="record"><div class="record-top"><div><span class="badge">${esc(periodFor(r.date).key.endsWith('H1')?'上期':'下期')}</span><h4>${esc(name)} ${r.grade?`<span class="badge good">${esc(r.grade)}</span>`:''}</h4><div class="record-date">${esc(r.date)}</div></div><button class="iconbtn" data-delete-record="${esc(r.id)}">削除</button></div>${sections.map(x=>`<div class="record-section"><b>${x[0]}</b><div>${esc(x[1])}</div></div>`).join('')}</article>`}).join('');$('recentRecords').querySelectorAll('[data-delete-record]').forEach(b=>b.onclick=()=>deleteRecord(b.dataset.deleteRecord))}
+
+  function renderPeriods(){const selected=$('periodSelect').value||currentPeriod().key,opts=periodOptions();$('periodSelect').innerHTML=opts.map(p=>`<option value="${esc(p.key)}">${esc(p.label)}</option>`).join('');$('periodSelect').value=opts.some(p=>p.key===selected)?selected:opts[0]?.key||'';renderSummary()}
+  function compactLines(arr){const vals=arr.map(x=>String(x||'').trim()).filter(Boolean);return vals.length?vals.map(v=>'・'+v).join('\n'):'—'}
+  function renderSummary(){const key=$('periodSelect').value,rs=getPeriodRecords(key),ids=[...new Set(rs.map(r=>r.staffId))];if(!ids.length){$('summaryList').innerHTML='<div class="empty">この期間の観察記録はありません。</div>';return}$('summaryList').innerHTML=ids.map(id=>{const prs=rs.filter(r=>r.staffId===id).sort((a,b)=>a.date.localeCompare(b.date)),s=findStaff(id),name=s?.name||prs[0]?.staffName||'不明',latestGrade=[...prs].reverse().find(r=>r.grade)?.grade||s?.grade||'未設定';return`<section class="summary-person"><div class="summary-head"><div><strong>${esc(name)}</strong><div class="muted">記録 ${prs.length}件</div></div><span class="badge">${esc(latestGrade)}</span></div><div class="summary-box"><div class="summary-item"><strong>良い点</strong><div>${esc(compactLines(prs.map(r=>r.good)))}</div></div><div class="summary-item"><strong>改善期待行動</strong><div>${esc(compactLines(prs.map(r=>r.improve)))}</div></div><div class="summary-item"><strong>具体的な出来事</strong><div>${esc(compactLines(prs.map(r=>r.fact)))}</div></div><div class="summary-item"><strong>次回確認したいこと</strong><div>${esc(compactLines(prs.map(r=>r.next)))}</div></div></div></section>`}).join('')}
+
+  function summaryText(ai=false){const key=$('periodSelect').value,p=periodOptions().find(x=>x.key===key),rs=getPeriodRecords(key),ids=[...new Set(rs.map(r=>r.staffId))],blocks=ids.map(id=>{const prs=rs.filter(r=>r.staffId===id).sort((a,b)=>a.date.localeCompare(b.date)),s=findStaff(id),name=s?.name||prs[0]?.staffName||'不明',lines=[`【${name}】`];prs.forEach(r=>{lines.push(`\n${r.date}${r.grade?` / グレード:${r.grade}`:''}`);if(r.good)lines.push(`良い点：${r.good}`);if(r.improve)lines.push(`改善期待行動：${r.improve}`);if(r.fact)lines.push(`出来事・状況：${r.fact}`);if(r.next)lines.push(`次回確認：${r.next}`)});return lines.join('\n')});const base=`${p?.label||key} スタッフ観察記録\n記録件数：${rs.length}件\n\n${blocks.join('\n\n--------------------\n\n')}`;if(!ai)return base;return`以下は${p?.label||key}のスタッフ観察記録です。人物への決めつけではなく、記載された具体的行動だけを根拠に、スタッフごとに半年の育成振り返りを作成してください。\n\n各スタッフについて、\n・繰り返し見られた良い行動・強み\n・改善期待行動の傾向\n・前半から後半への変化や成長\n・次の半年で期待する具体的行動を3つ\n・リーダーとしてどう支援・声掛けするとよいか\nを簡潔に整理してください。根拠が少ない項目は推測せず「記録不足」としてください。\n\n${base}`}
+  async function copyText(text,msg){if(!text.trim()){alert('コピーするデータがありません。');return}try{await navigator.clipboard.writeText(text);alert(msg)}catch{prompt('コピーしてください',text)}}
+
+  function openGradeDialog(id){editingGradeId=id;const s=findStaff(id);if(!s)return;$('gradeDialogTitle').textContent=s.name+' の設定';$('gradeDialogInput').value=s.grade||'';$('gradeDialog').showModal()}
+  function deleteStaff(id){const s=findStaff(id);if(!s)return;const n=records.filter(r=>r.staffId===id).length;if(!confirm(`${s.name}をスタッフ一覧から削除しますか？${n?`\nこの人の観察記録 ${n}件も削除されます。`:''}`))return;staff=staff.filter(x=>x.id!==id);records=records.filter(r=>r.staffId!==id);persist();renderAll()}
+  function addStaff(){const name=$('manualName').value.trim(),grade=$('manualGrade').value.trim();if(!name){alert('名前を入力してください。');return}const hit=staff.find(s=>s.name===name);if(hit){hit.active=true;if(grade)hit.grade=grade}else staff.push({id:cryptoId(),name,grade,active:true,source:'manual'});persist();$('manualName').value='';$('manualGrade').value='';renderAll()}
+
+  function saveImportSettings(){importSettings={start:$('rangeStart').value.trim(),end:$('rangeEnd').value.trim(),exclude:$('excludeNames').value.trim()};saveJSON(KEYS.import,importSettings);const excludes=parseExcluded();staff.forEach(s=>{if(excludes.has(s.name))s.active=false});persist();renderAll();if(lastImportedNames.length)addOrUpdateImported(lastImportedNames);$('shiftStatus').className='notice good';$('shiftStatus').textContent='抽出範囲・除外設定を保存しました。次回のExcel読込にも使われます。'}
+
+  function download(name,text,type='application/json'){const blob=new Blob([text],{type:type+';charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+  function backup(){const data={version:1,exportedAt:new Date().toISOString(),staff,records,importSettings};download(`staff-kansatsu-backup-${nowISO()}.json`,JSON.stringify(data,null,2))}
+  async function restore(file){try{const data=JSON.parse(await file.text());if(!Array.isArray(data.staff)||!Array.isArray(data.records))throw new Error('対応するバックアップ形式ではありません');if(!confirm(`スタッフ ${data.staff.length}名、記録 ${data.records.length}件で現在のデータを置き換えますか？`))return;staff=data.staff;records=data.records;importSettings=data.importSettings||{start:'',end:'',exclude:''};persist();saveJSON(KEYS.import,importSettings);normalizeStaff();loadImportFields();renderAll();alert('バックアップを復元しました。')}catch(e){alert('復元できませんでした：'+(e?.message||e))}}
+  const csvCell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  function exportCSV(){const header=['日付','期間','スタッフ','グレード','良い点','改善期待行動','具体的な出来事・状況','次回確認'],lines=[header.map(csvCell).join(',')];[...records].sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{const s=findStaff(r.staffId),p=periodFor(r.date);lines.push([r.date,p.label,s?.name||r.staffName||'',r.grade,r.good,r.improve,r.fact,r.next].map(csvCell).join(','))});download(`staff-kansatsu-${nowISO()}.csv`,'\uFEFF'+lines.join('\r\n'),'text/csv')}
+  function deleteAll(){if(!confirm('スタッフと観察記録をすべて削除します。元に戻せません。よろしいですか？'))return;if(!confirm('本当に全データを削除しますか？'))return;[KEYS.staff,KEYS.records,KEYS.import].forEach(k=>localStorage.removeItem(k));staff=[];records=[];importSettings={start:'',end:'',exclude:''};lastImportedNames=[];loadImportFields();renderAll()}
+  function loadImportFields(){$('rangeStart').value=importSettings.start||'';$('rangeEnd').value=importSettings.end||'';$('excludeNames').value=importSettings.exclude||''}
+  function renderAll(){normalizeStaff();renderStats();renderStaffSelect();renderStaff();renderRecent();renderPeriods()}
+
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===b.dataset.tab));if(b.dataset.tab==='summaryPanel')renderPeriods()});
+  $('obsDate').value=nowISO();$('obsStaff').onchange=syncGradeFromStaff;$('saveRecordBtn').onclick=saveRecord;$('clearFormBtn').onclick=()=>clearRecordForm();$('staffSearch').oninput=renderStaff;$('addStaffBtn').onclick=addStaff;$('periodSelect').onchange=renderSummary;$('copySummaryBtn').onclick=()=>copyText(summaryText(false),'半年まとめ用データをコピーしました。');$('copyAiPromptBtn').onclick=()=>copyText(summaryText(true),'ChatGPT分析用の文章をコピーしました。');$('shiftFile').onchange=e=>{const f=e.target.files?.[0];if(f)importShift(f);e.target.value=''};$('applyImportSettingsBtn').onclick=saveImportSettings;$('backupBtn').onclick=backup;$('restoreFile').onchange=e=>{const f=e.target.files?.[0];if(f)restore(f);e.target.value=''};$('csvBtn').onclick=exportCSV;$('deleteAllBtn').onclick=deleteAll;$('gradeDialogClose').onclick=()=>$('gradeDialog').close();$('gradeDialogSave').onclick=()=>{const s=findStaff(editingGradeId);if(s){s.grade=$('gradeDialogInput').value.trim();persist();renderAll()}$('gradeDialog').close()};
+  loadImportFields();normalizeStaff();renderAll();
+})();
+</script>
+</body>
+</html>
