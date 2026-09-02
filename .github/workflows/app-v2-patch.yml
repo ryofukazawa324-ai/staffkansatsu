@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - scripts/patch_app_v2.py
+      - .github/workflows/app-v2-patch.yml
 
 permissions:
   contents: write
