@@ -1,0 +1,25 @@
+name: Apply appraisal v2 patch
+
+on:
+  push:
+    paths:
+      - scripts/patch_app_v2.py
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Patch app
+        run: python scripts/patch_app_v2.py
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm scripts/patch_app_v2.py .github/workflows/app-v2-patch.yml
+          git add index.html
+          git commit -m "Use six-grade appraisal observation model"
+          git push
