@@ -1,0 +1,59 @@
+name: Apply grade tabs
+
+on:
+  push:
+    paths:
+      - .github/workflows/apply-grade-tabs.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Patch grade selector
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          old="    .pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 9px;font-size:11px}\n"
+          if '.grade-tabs{' not in s:
+              s=s.replace(old,old+"    .grade-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:6px}\n    .grade-tab{border:1px solid #d9dee8;background:#f7f9fc;color:#536079;border-radius:11px;padding:10px 6px;font-weight:800;font-size:12px}\n    .grade-tab.active{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(49,86,211,.18)}\n",1)
+
+          s=s.replace('''      <div class="field">
+                <label for="obsGrade">今のグレード</label>
+                <input id="obsGrade" type="text" placeholder="例：G2 / C2 / 新人 など">
+              </div>''','''      <div class="field">
+                <label>今のグレード</label>
+                <input id="obsGrade" type="hidden">
+                <div id="obsGradeTabs" class="grade-tabs" aria-label="今のグレード"></div>
+              </div>''')
+          s=s.replace('''        <div class="field"><label for="manualGrade">現在グレード</label><input id="manualGrade" type="text" placeholder="例：G2"></div>''','''        <div class="field"><label>現在グレード</label><input id="manualGrade" type="hidden"><div id="manualGradeTabs" class="grade-tabs" aria-label="現在グレード"></div></div>''')
+          s=s.replace('''    <div class="field"><label for="gradeDialogInput">現在グレード</label><input id="gradeDialogInput" type="text"></div>''','''    <div class="field"><label>現在グレード</label><input id="gradeDialogInput" type="hidden"><div id="gradeDialogTabs" class="grade-tabs" aria-label="現在グレード"></div></div>''')
+
+          anchor="  let editingGradeId=null;\n"
+          if 'const GRADE_OPTIONS=' not in s:
+              s=s.replace(anchor,anchor+"  const GRADE_OPTIONS=['新人','社員','中堅','熟練'];\n\n  function renderGradeTabs(containerId,inputId,value){\n    const host=$(containerId),input=$(inputId);\n    if(!host||!input)return;\n    input.value=value||'';\n    host.innerHTML=GRADE_OPTIONS.map(g=>`<button type=\"button\" class=\"grade-tab ${input.value===g?'active':''}\" data-grade-choice=\"${esc(g)}\">${esc(g)}</button>`).join('');\n    host.querySelectorAll('[data-grade-choice]').forEach(b=>b.onclick=()=>{\n      input.value=b.dataset.gradeChoice;\n      host.querySelectorAll('.grade-tab').forEach(x=>x.classList.toggle('active',x===b));\n    });\n  }\n",1)
+
+          s=s.replace("  function syncGradeFromStaff(){\n    const s=findStaff($('obsStaff').value);\n    if(s)$('obsGrade').value=s.grade||'';\n  }","  function syncGradeFromStaff(){\n    const s=findStaff($('obsStaff').value);\n    renderGradeTabs('obsGradeTabs','obsGrade',s?.grade||'');\n  }")
+          s=s.replace("    $('gradeDialogTitle').textContent=s.name+' の設定';\n    $('gradeDialogInput').value=s.grade||'';\n    $('gradeDialog').showModal();","    $('gradeDialogTitle').textContent=s.name+' の設定';\n    renderGradeTabs('gradeDialogTabs','gradeDialogInput',s.grade||'');\n    $('gradeDialog').showModal();")
+          s=s.replace("    persist();$('manualName').value='';$('manualGrade').value='';renderAll();","    persist();$('manualName').value='';renderGradeTabs('manualGradeTabs','manualGrade','');renderAll();")
+          s=s.replace("  $('obsDate').value=nowISO();\n  $('obsStaff').onchange=syncGradeFromStaff;","  $('obsDate').value=nowISO();\n  renderGradeTabs('manualGradeTabs','manualGrade','');\n  $('obsStaff').onchange=syncGradeFromStaff;")
+
+          p.write_text(s)
+          if 'obsGradeTabs' not in s or 'GRADE_OPTIONS' not in s:
+              raise SystemExit('grade tab patch failed')
+          PY
+      - name: Commit app update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-grade-tabs.yml
+          git add index.html
+          git commit -m "Use selectable staff grade tabs"
+          git push
